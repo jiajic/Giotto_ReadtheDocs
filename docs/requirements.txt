@@ -12,3 +12,4 @@ furo
 sphinx_togglebutton
 sphinx-panels
 sphinx-notfound-page
+autodocsumm==0.2.9
