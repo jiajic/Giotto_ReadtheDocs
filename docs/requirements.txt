@@ -1,6 +1,6 @@
 # Defining the exact version will make sure things don't break
 bluepy
-sphinx
+sphinx==2.2.*
 readthedocs-sphinx-search==0.1.0
 sphinx_design
 sphinx-copybutton

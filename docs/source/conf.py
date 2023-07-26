@@ -26,7 +26,7 @@ copyright = '2022, Ruben Dries and Guo-Cheng Yuan'
 author = 'Developed by labs of Ruben Dries and Guo-Cheng Yuan.'
 
 # The full version, including alpha/beta/rc tags
-release = '3.3'
+release = '3.3.1'
 
 
 # -- General configuration ---------------------------------------------------
@@ -44,7 +44,7 @@ extensions = [
 'sphinx.ext.autodoc',
 'sphinx_design',
 'sphinx_copybutton',
-'sphinx_toolbox', 
+'sphinx_toolbox',
 'sphinx_toolbox.shields',
 'sphinx_toolbox.github',
 "sphinx.ext.autosummary",
@@ -71,7 +71,7 @@ source_suffix = ['.rst', '.md']
 
 # Configuration for sphinx_toolbox
 github_repository = "Giotto"
-github_username = "drieslab" 
+github_username = "drieslab"
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -81,11 +81,11 @@ templates_path = ['_templates']
 # This pattern also affects html_static_path and html_extra_path.
 
 suppress_warnings = [
-#'Unknown directive type dropdown', 
+#'Unknown directive type dropdown',
 'autosectionlabel.*',
 'epub.duplicated_toc_entry']
 
-#autosectionlabel_prefix_document = True #caused many warnings 
+#autosectionlabel_prefix_document = True #caused many warnings
 #autosectionlabel_maxdepth = 1 #caused many warnings
 
 # -- Options for HTML output -------------------------------------------------
@@ -150,32 +150,32 @@ html_theme_options = {
 
 # html_sidebars = {
 #     "index": [
-#         "search-field.html", 'globaltoc.html' 
+#         "search-field.html", 'globaltoc.html'
 #     ],
 #     "gettingstarted": [
-#         "search-field.html", 'globaltoc.html' 
+#         "search-field.html", 'globaltoc.html'
 #     ],
 #     "documentation": [
-#         "search-field.html", 
+#         "search-field.html",
 #     ],
 #     "contribute": [
-#         "search-field.html", 'globaltoc.html' 
+#         "search-field.html", 'globaltoc.html'
 #     ],
 #     "datasets": [ #tutorials
-#         "search-field.html", 'globaltoc.html' 
+#         "search-field.html", 'globaltoc.html'
 #     ],
 #     "faq": [
-#         "search-field.html", 'globaltoc.html' 
+#         "search-field.html", 'globaltoc.html'
 #     ],
 #     "trygitto": [
-#         "search-field.html", 
+#         "search-field.html",
 #         "globaltoc.html"
 #     ],
-#     "errorsfaqsandtips": [ 
-#         "search-field.html", 'globaltoc.html' 
+#     "errorsfaqsandtips": [
+#         "search-field.html", 'globaltoc.html'
 #     ],
-#      "github_issues": [ 
-#         "search-field.html", 'globaltoc.html' 
+#      "github_issues": [
+#         "search-field.html", 'globaltoc.html'
 #     ]
 # }
 
@@ -199,7 +199,7 @@ def get_badge_inputs(text, cls: str = ""):
 def get_link_badge_inputs(link, text=None, type="link", cls: str = "", tooltip=None):
     return link, text or link, type, cls.split(), tooltip
 
-#Copy clipboard image 
+#Copy clipboard image
 #To use a different image for your copy buttons, do the following:
 #Place the image in the _static/ folder of your site.
 #Set the copybutton_image_path variable in your conf.py to be the path to your image file, relative to _static/.
