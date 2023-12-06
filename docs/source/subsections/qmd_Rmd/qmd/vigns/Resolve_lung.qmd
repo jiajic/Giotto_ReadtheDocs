@@ -1,0 +1,315 @@
+---
+title: "Resolve Biosciences Molecular Cartography Human Lung"
+format: html
+date: 'Compiled 2023-07-14'
+number-sections: true
+---
+
+```{r eval=TRUE, message=FALSE}
+# Ensure Giotto Suite is installed
+i_p = installed.packages()
+if(!"Giotto" %in% i_p) devtools::install_github("drieslab/Giotto@suite")
+
+# Ensure Giotto Data is installed
+if(!"GiottoData" %in% i_p) devtools::install_github("drieslab/GiottoData")
+
+# Ensure the Python environment for Giotto has been installed
+genv_exists = checkGiottoEnvironment()
+if(!genv_exists){
+  # The following command need only be run once to install the Giotto environment
+  installGiottoEnvironment()
+}
+
+library(Giotto)
+library(GiottoData) # (version 0.2.2 or higher)
+library(data.table)
+
+# Ensure the Python environment for Giotto has been installed.
+genv_exists = checkGiottoEnvironment()
+if(!genv_exists){
+  # The following command need only be run once to install the Giotto environment.
+  installGiottoEnvironment()
+}
+```
+
+## Set up Giotto environment
+```{r, eval=FALSE}
+# 1. ** SET WORKING DIRECTORY WHERE PROJECT OUPUTS WILL SAVE TO **
+results_folder = '/path/to/save/directory/'
+
+# 2. Create Giotto instructions
+# Directly saving plots to the working directory without rendering them in the editor saves time.
+instrs = createGiottoInstructions(save_dir = results_folder,
+                                  save_plot = TRUE,
+                                  show_plot = FALSE,
+                                  return_plot = FALSE)
+```
+
+
+## Dataset Explanation
+This vignette covers Giotto object creation and simple exploratory analysis with Resolve Biosciences' *Molecular Cartography* platform data using their [Human Lung dataset](https://resolvebiosciences.com/open-dataset/?dataset=human-lung-dataset). The data from **873_C1** (one of the three slides available) will be worked with.    
+
+>
+| This dataset was generated in-house at Resolve Biosciences using customer-provided tissue sections.
+| The experiment used a custom 34-gene target panel to measure gene expression in situ for
+| five fresh frozen tissue sections across three Molecular observation slides.
+|
+| Sample details: Fresh frozen tissue sections of human lung were analyzed to
+| identify hematopoietic cells and progenitor niches.
+| ...
+| Created Date: January 2022.
+
+## Project data
+Please first download all the data for sample sample **873_C1** into a common directory and then specify that directory below.    
+A set of segmentations data was not found at the time of this writing, so we provide segmentations generated using [StarDist and QuPath](https://qupath.readthedocs.io/en/0.3/docs/advanced/stardist.html) with the [*dsb2018_heavy_augment.pb*](https://github.com/qupath/models/tree/main/stardist) model.
+```{r, eval=FALSE}
+# data directory
+mc_dir = '/path/to/molecular_cartography/data/directory'
+# if wget is installed, set method = 'wget'
+# if you run into authentication issues with wget, then add " extra = '--no-check-certificate' "
+GiottoData::getSpatialDataset(dataset = 'mol_cart_lung_873_C1', directory = mc_dir, method = 'wget')
+```
+
+
+## Load Data
+```{r, eval = FALSE}
+experiment_manifest <- list(
+  image_DAPI = list.files(mc_dir, full.names = TRUE, pattern = 'DAPI'),
+  image_brightfield = list.files(mc_dir, full.names = TRUE, pattern = 'brightfield'),
+  tx = list.files(mc_dir, full.names = TRUE, pattern = '.txt'),
+  poly = list.files(mc_dir, full.names = TRUE, pattern = '.geojson')
+)
+
+# images
+dapi <- createGiottoLargeImage(experiment_manifest$image_DAPI)
+bf <- createGiottoLargeImage(experiment_manifest$image_brightfield)
+
+# transcript detections
+tx_all <- fread(experiment_manifest$tx)
+
+
+# segmentations
+polys <- createGiottoPolygonsFromDfr(paste0(mc_dir, '/Resolve_hLung_stardist.geojson'))
+```
+
+
+
+## Data Processing and Exploration
+
+### Image information
+```{r, eval = FALSE}
+plot(dapi)
+plot(bf)
+```
+![](../../../../images/tutorials/resolve_lung_873_C1/pre_analysis/dapi_preview.png){width="49%"}
+![](../../../../images/tutorials/resolve_lung_873_C1/pre_analysis/bf_preview.png){width="49%"}
+
+
+### Segmentation Polygon information
+With subcellular datasets, data is often provided in two parts: the raw features detected and a set of polygons that provide morphological context to those features.
+```{r, eval = FALSE}
+# Plot polygons with rainbow spectrum colors. Helpful for determining if the
+# background is accidentally included as an extra polygon
+plot(polys, col = rainbow(100))
+polys <- flip(polys) # flip across y0 to match images
+plot(polys)
+```
+![](../../../../images/tutorials/resolve_lung_873_C1/pre_analysis/stardist_segmentations.png){width="100%"}
+
+
+
+### Transcript detections
+>
+| Description of columns:
+| V1: x (px)
+| V2: y (px)
+| V3: z (confocal step)
+| V4: gene
+| V5: NA (fine to remove)
+
+```{r, eval = FALSE}
+# print all included features
+tx_all[, table(V4)]
+
+# format transcript info and invert y values to match image
+tx_all[, V5 := NULL]
+setnames(tx_all, new = c('x', 'y', 'z', 'feat_ID'))
+tx_all[, y := -y]
+
+# Separate out FP features
+tx_genes <- tx_all[-grep('^FP\ ', feat_ID)]
+tx_fp <- tx_all[grep('^FP\ ', feat_ID)]
+
+# create giottoPoints
+genes_gpnts <- createGiottoPoints(tx_genes, feat_type = 'rna')
+fp_gpnts <- createGiottoPoints(tx_fp, feat_type = 'fp')
+
+# plot to preview giottoPoints
+plot(genes_gpnts)
+plot(fp_gpnts)
+```
+
+![](../../../../images/tutorials/resolve_lung_873_C1/pre_analysis/tx_genes.png){width="49%"}
+![](../../../../images/tutorials/resolve_lung_873_C1/pre_analysis/tx_fp.png){width="49%"}
+
+
+
+## Create Giotto Object
+```{r, eval = FALSE}
+g <- createGiottoObjectSubcellular(gpolygons = list(cell = polys),
+                                   gpoints = list(rna = genes_gpnts,
+                                                    fp = fp_gpnts),
+                                   largeImages = list(dapi = dapi,
+                                                      brightfield = bf),
+                                   instructions = instrs,
+                                   verbose = FALSE)
+
+# calculate polygon centroids for use as spatial locations
+g <- addSpatialCentroidLocations(g, poly_info = 'cell', spat_loc_name = 'raw')
+```
+
+```{r, eval=FALSE}
+# test plot
+spatPlot2D(
+  g,
+  show_image = TRUE,
+  largeImage_name = 'dapi',
+  point_size = 1,
+  save_param = list(
+    save_name = '1_spatplot'
+  )
+)
+
+# crop for better look
+g_subset <- subsetGiottoLocs(
+  g,
+  x_max = 7e3,
+  x_min = 5e3,
+  y_max = -6e3,
+  y_min = -8e3
+)
+
+# test plot of subset
+spatInSituPlotPoints(
+  g_subset,
+  show_image = TRUE,
+  largeImage_name = 'dapi',
+  show_polygon = TRUE,
+  polygon_feat_type = 'cell',
+  polygon_alpha = 0.1,
+  polygon_color = 'white',
+  polygon_line_size = 0.2,
+  feats = list(rna = featIDs(g)[1:5]),
+  use_overlap = FALSE,
+  feat_type = 'rna',
+  point_size = 0.2,
+  save_param = list(
+    save_name = '2_alignment_closeup'
+  )
+)
+```
+![](../../../../images/tutorials/resolve_lung_873_C1/1_spatplot.png){width="49%"}
+![](../../../../images/tutorials/resolve_lung_873_C1/2_alignment_closeup.png){width="49%"}
+
+
+
+## Aggregate transcript detections
+In order to perform cell-level analyses and statistics, the detected transcripts must first be aggregated based on the polygon information to form an expression matrix.    
+Here we 
+```{r, eval=FALSE}
+g <- calculateOverlapRaster(
+  g,
+  name_overlap = 'rna',
+  feat_info = 'rna',
+  spatial_info = 'cell'
+)
+
+g <- overlapToMatrix(g)
+```
+
+## Processing Data
+```{r, eval = FALSE}
+# check effects of filtering settings
+filterCombinations(
+  g,
+  expression_thresholds = c(1),
+  feat_det_in_min_cells = c(1, 1),
+  min_det_feats_per_cell = c(1, 2)
+)
+# setting minimum of 1 feature detection/cell removes 1077 cells
+
+# filtering
+g <- filterGiotto(
+  g,
+  expression_threshold = 1,
+  feat_det_in_min_cells = 1,
+  min_det_feats_per_cell = 1
+)
+
+g <- normalizeGiotto(g)
+g <- addStatistics(g)
+```
+
+### Plot number of detections per cell
+```{r, eval = FALSE}
+spatInSituPlotPoints(
+  g,
+  show_polygon = TRUE,
+  polygon_feat_type = 'cell',
+  polygon_fill_as_factor = FALSE,
+  polygon_fill = 'total_expr',
+  polygon_color = 'white',
+  polygon_line_size = 0.2
+)
+```
+
+### Create Spatial Network
+```{r, eval = FALSE}
+g = createSpatialDelaunayNetwork(
+  gobject = g,
+  spat_unit = 'cell'
+)
+```
+
+### Spatially Variable Gene Detection
+```{r, eval = FALSE}
+SVG = binSpect(g, spat_unit = 'cell', feat_type = 'rna')
+
+# preview several
+spatFeatPlot2D(g, feats = SVG[, head(feats, 4)])
+spatFeatPlot2D(g, feats = SVG[, tail(feats, 4)])
+```
+
+There are 31 genes being detected in this dataset, so there is no need to subset these genes prior to dimension reduction and clustering.
+
+## Dimension Reduction
+```{r, eval=FALSE}
+g = runPCA(gobject = g, ncp = 31, feats_to_use = SVG[1:10]$feats)
+
+screePlot(g, ncp = 31)
+
+g = runUMAP(g, n_neighbors = 100, n_epochs = 1000, dimensions_to_use = 1:9)
+dimPlot2D(g)
+```
+
+## Clustering
+```{r, eval = FALSE}
+g = createNearestNetwork(g)
+g = doLeidenCluster(g, resolution = 0.3)
+
+dimPlot2D(g, cell_color = 'leiden_clus')
+spatPlot2D(g, cell_color = 'leiden_clus')
+```
+
+## Calculate neighborhoods
+```{r, eval = FALSE}
+meta_props = calculateSpatCellMetadataProportions(g, metadata_column = 'leiden_clus', return_gobject = FALSE, spat_network = 'Delaunay_network')
+
+meta_props_mat = as.matrix(meta_props[][, 2:ncol(meta_props)])
+rownames(meta_props_mat) = spatIDs(meta_props)
+heatmap(meta_props_mat)
+
+spatPlot2D(g, )
+```
+
+
