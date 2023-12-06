@@ -1,12 +1,8 @@
 --- 
-title: contribute 
-format: rst 
-date: ymd 
---- 
---- 
-title: contribute 
-format: rst 
-date: 2022-09-16 
+title: Contributions to Giotto 
+format: html 
+date: last-modified
+number-sections: true
 --- 
 
 ## How to contribute
@@ -17,22 +13,20 @@ $~$
 ### Coding Style  
 Following a particular programming style will help programmers read and understand source code conforming to the style, and help to avoid introducing errors. Here we present a small list of guidelines on what is considered a good practice when writing R codes in Giotto package. Most of them are adapted from [Bioconductor - coding style](https://bioconductor.org/developers/how-to/coding-style/) or [Google's R Style Guide](https://google.github.io/styleguide/Rguide.xml). These guidelines are preferences and strongly encouraged!  
 
-- **Indentation**
-    - Use 4 spaces for indenting. No tabs.
-    - Preferably no lines longer than 80 characters. This includes function documentations, examples, and vignette code chunks.  
-    
-- **Function names**
-    - Use camelCase.
-    - Do not use "." (in the S3 class system, some(x) where x is class A will dispatch to some.A).
-    - Use underscores for non-exported functions, like 'non_exported_function'.  
+- **Naming**
+    - Use camelCase for function names.
+    - Use snake_case for non-exported functions, like `'non_exported_function'`
+    - Use snake_case for parameter names.  
+    - Do not use "." as a separator (in the S3 class system, some(x) where x is class A will dispatch to some.A).
 
 - **Use of space**
-    - Do not place a space before a comma, but always place one after a comma. This: a, b, c.  
-    - Always use space around “=” when using named arguments to functions. This: somefunc(a = 1, b = 2).
+    - Do not place a space before a comma, but always place one after a comma. This: `a, b, c`.  
+    - Always use space around “=” when using named arguments to functions. This: `somefunc(a = 1, b = 2)`.
     
 - **Use of symbols**
-    - Do not use any non-ASCII characters
-
+    - Do not use any non-UTF-8 characters unless provided as the escape code. For example: `'\u00F6'` for `ö`
+    
+Beyond these guidelines, [*styler*](https://github.com/r-lib/styler) should be used in order to maintain code uniformity.
 
 $~$
 
